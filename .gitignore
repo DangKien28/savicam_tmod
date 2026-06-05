@@ -32,6 +32,10 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
 
 # Symbolication related
 app.*.symbols
@@ -43,3 +47,49 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+
+# SaViCam large binaries
+models/yolo_detector/v1.0/*.tflite
+models/nlp_agent/v1.0/*.tflite
+ai/yolo_detector/data/raw/
+ai/nlp_agent/data/raw_commands/
+ai/nlp_agent/data/stt_error_samples/
+maps/raw_osm/*.pbf
+maps/output/*.zip
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# SaViCam generated AI artifacts
+ai/**/*.pt
+ai/**/*.onnx
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+dist/
+*.egg-info/
+.ipynb_checkpoints/
+
+# SaViCam secrets
+.env
+.env.local
+*.env.*
+supabase/.env
+google-services.json
+GoogleService-Info.plist
+serviceAccountKey.json
+r2_credentials.sh
+fcm_server_key.txt
+**/secrets/
+**/*.p12
+**/*.pem
+
+# Personal / Colab
+.vscode/settings.json
+colab_cache/
+ai/**/*_personal.ipynb
