@@ -499,7 +499,7 @@ google-services.json        # Regenerate from Firebase Console
 GoogleService-Info.plist
 serviceAccountKey.json
 r2_credentials.sh
-fcm_server_key.txt
+firebase_service_account.json
 **/secrets/
 **/*.p12
 **/*.pem
@@ -534,7 +534,7 @@ ai/**/*_personal.ipynb
 
 6. **DEV-04: Add `google-services.json`** — download from Firebase Console; place in `apps/tmod/android/app/` and `apps/relap/android/app/`; verify FCM project ID matches Supabase Edge Function config.
 
-7. **DEV-04: Set GitHub Actions secrets** — add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `FCM_SERVER_KEY`, `R2_ACCESS_KEY`, `R2_SECRET_KEY` to repository Secrets.
+7. **DEV-04: Set GitHub Actions secrets** — add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `FIREBASE_PROJECT_ID`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `R2_ACCESS_KEY`, `R2_SECRET_KEY` to repository Secrets.
 
 8. **DEV-01: Verify stub APK builds** — run `flutter build apk --debug` from `apps/tmod/`; APK must install on test device with 3 screens visible and SOS button firing local notification.
 

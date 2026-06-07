@@ -14,7 +14,7 @@
 - □ (DEV-01): Run `./scripts/bootstrap.sh` on each machine; confirm `flutter pub get` succeeds and `flutter build apk --debug` produces an installable APK on the test device.
 - □ (DEV-02): Create Google Colab notebook `ai/yolo_detector/training/train_yolov8n.ipynb`; mount Drive; verify YOLOv8n base weights load; launch first fine-tune run on the Da Nang dataset subset (even 50 images is enough to confirm the pipeline is not broken). **Training must start today.**
 - □ (DEV-03): Open `MainActivity.kt`; register all four MethodChannels (`InferenceChannel`, `TrackingChannel`, `TtsSttChannel`, `ServiceChannel`) and confirm no crash on cold start.
-- □ (DEV-04): Create Supabase project; download `google-services.json`; place in both `apps/tmod/android/app/` and `apps/relap/android/app/`; add all five GitHub Actions secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `FCM_SERVER_KEY`, `R2_ACCESS_KEY`, `R2_SECRET_KEY`).
+- □ (DEV-04): Create Supabase project; download `google-services.json`; place in both `apps/tmod/android/app/` and `apps/relap/android/app/`; add all six GitHub Actions secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `FIREBASE_PROJECT_ID`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `R2_ACCESS_KEY`, `R2_SECRET_KEY`).
 - □ (DEV-05): Download Da Nang OSM PBF file locally; run a minimal GraphHopper pre-build test on one small tile to verify the toolchain works.
 
 **End of Day 1 checkpoint:** Every dev has cloned the repo, `flutter pub get` passes, the APK installs on at least one device, Colab training has submitted its first run, and Supabase project exists with credentials placed correctly.

@@ -3,6 +3,8 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // FCM — must be applied last (TASK-D04-DEV04-01)
+    id("com.google.gms.google-services")
 }
 
 android {
