@@ -4,6 +4,13 @@
 -- UUID giả — chỉ dùng cho development/testing
 -- =====================================================
 
+-- Seed auth.users để thỏa mãn foreign key profiles_id_fkey
+INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+VALUES
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'tmod@example.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'relap@example.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now())
+ON CONFLICT (id) DO NOTHING;
+
 -- Seed profiles (2 users: 1 T-Mod + 1 Relap)
 INSERT INTO profiles (id, role, display_name, fcm_token, paired_device_id)
 VALUES
