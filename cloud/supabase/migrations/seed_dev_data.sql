@@ -1,0 +1,44 @@
+-- =====================================================
+-- SaViCam Dev Seed Data — Day 3
+-- Chạy trên Supabase SQL Editor
+-- UUID giả — chỉ dùng cho development/testing
+-- =====================================================
+
+-- Seed profiles (2 users: 1 T-Mod + 1 Relap)
+INSERT INTO profiles (id, role, display_name, fcm_token, paired_device_id)
+VALUES
+  ('00000000-0000-0000-0000-000000000001',
+   't_mod',
+   'Người khiếm thị Test',
+   'fcm_token_tmod_placeholder',
+   '00000000-0000-0000-0000-000000000002'),
+  ('00000000-0000-0000-0000-000000000002',
+   'relap',
+   'Người thân Test',
+   'fcm_token_relap_placeholder',
+   '00000000-0000-0000-0000-000000000001');
+
+-- Seed device_telemetry (1 row — Relap Telemetry screen dùng row này)
+INSERT INTO device_telemetry (device_id, battery_pct, network_status, is_headless_active)
+VALUES
+  ('00000000-0000-0000-0000-000000000001', 78, '4G', false);
+
+-- Seed sos_events (2 rows — Relap SOS screen test)
+INSERT INTO sos_events (device_id, trigger_method, lat, lng, status)
+VALUES
+  ('00000000-0000-0000-0000-000000000001',
+   'physical_button',
+   16.0544,    -- Đà Nẵng center lat
+   108.2022,   -- Đà Nẵng center lng
+   'active'),
+  ('00000000-0000-0000-0000-000000000001',
+   'voice',
+   16.0600,
+   108.2100,
+   'resolved');
+
+-- Seed location_macros (2 rows — NLP navigation test)
+INSERT INTO location_macros (owner_id, keyword, lat, lng, is_synced)
+VALUES
+  ('00000000-0000-0000-0000-000000000001', 'nhà', 16.0544, 108.2022, true),
+  ('00000000-0000-0000-0000-000000000001', 'trường', 16.0720, 108.1520, true);

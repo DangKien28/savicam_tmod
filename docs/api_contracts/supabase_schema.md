@@ -1,6 +1,11 @@
 # SaViCam - Supabase Schema Contract (CONTRACT-03 + CONTRACT-04)
 
-Version: 1.0 | Frozen: Day 3 | Owner: DEV-04
+> ⚠️ SCHEMA FROZEN — Day 3, Week 1
+> Bất kỳ thay đổi nào sau mốc này PHẢI đi kèm file migration SQL được đánh số
+> (002_*.sql, 003_*.sql...). Không ALTER TABLE trực tiếp trên dashboard.
+> Owner: DEV-04 | Violations sẽ break Flutter client queries silently.
+
+Version: 1.0 | Status: FROZEN as of Day 3, Week 1 | Owner: DEV-04
 
 This is the canonical cloud schema reference for SaViCam. The deployable SQL lives in `cloud/supabase/migrations/001_initial_schema.sql`; row-level security lives in `cloud/supabase/rls/row_level_security.sql`.
 
