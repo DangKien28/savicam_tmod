@@ -17,9 +17,9 @@ This is the canonical cloud schema reference for SaViCam. The deployable SQL liv
 |---|---|---|
 | `id` | `uuid` | Primary key, references `auth.users(id)` on delete cascade |
 | `role` | `text` | Required, one of `t_mod`, `relap` |
-| `display_name` | `text` | Optional |
+| `full_name` | `text` | Optional |
 | `fcm_token` | `text` | Optional |
-| `paired_device_id` | `uuid` | Optional, references `profiles(id)` |
+| `linked_id` | `uuid` | Optional, references `profiles(id)` |
 | `created_at` | `timestamptz` | Defaults to `now()` |
 
 RLS: authenticated users can read, insert, update, and delete only their own profile row where `id = auth.uid()`.
@@ -28,14 +28,13 @@ RLS: authenticated users can read, insert, update, and delete only their own pro
 
 | Column | Type | Constraints / Default |
 |---|---|---|
-| `id` | `uuid` | Primary key, defaults to `gen_random_uuid()` |
-| `device_id` | `uuid` | Required, references `profiles(id)` on delete cascade |
-| `battery_pct` | `int` | Optional, must be between 0 and 100 |
-| `network_status` | `text` | Defaults to `unknown` |
+| `device_id` | `uuid` | Primary key, references `profiles(id)` on delete cascade |
+| `battery_percentage` | `int` | Optional, must be between 0 and 100 |
+| `network_status` | `boolean` | Defaults to `false` |
 | `is_headless_active` | `boolean` | Defaults to `false` |
-| `recorded_at` | `timestamptz` | Defaults to `now()` |
+| `last_updated` | `timestamptz` | Defaults to `now()` |
 
-Indexes: `idx_telemetry_device_id`, `idx_telemetry_recorded_at`.
+Indexes: `idx_telemetry_last_updated`.
 
 RLS: T-Mod inserts telemetry for its own `device_id`; the device owner and paired Relap profile can read telemetry. Paired reads support either profile-pairing direction to avoid blocking legitimate guardian access during early account setup.
 
@@ -44,14 +43,14 @@ RLS: T-Mod inserts telemetry for its own `device_id`; the device owner and paire
 | Column | Type | Constraints / Default |
 |---|---|---|
 | `id` | `uuid` | Primary key, defaults to `gen_random_uuid()` |
-| `owner_id` | `uuid` | Required, references `profiles(id)` on delete cascade |
+| `user_id` | `uuid` | Required, references `profiles(id)` on delete cascade |
 | `keyword` | `text` | Required |
 | `lat` | `double precision` | Required |
 | `lng` | `double precision` | Required |
 | `is_synced` | `boolean` | Defaults to `false` |
 | `created_at` | `timestamptz` | Defaults to `now()` |
 
-Indexes: `idx_macros_owner_id`, `idx_macros_is_synced`.
+Indexes: `idx_macros_user_id`, `idx_macros_is_synced`.
 
 RLS: the owner can read and write their macros; the paired profile can read them. Paired reads support either profile-pairing direction to avoid blocking legitimate guardian access during early account setup.
 
@@ -87,10 +86,10 @@ Telemetry insert event:
   "table": "device_telemetry",
   "record": {
     "device_id": "uuid",
-    "battery_pct": 72,
-    "network_status": "4G",
+    "battery_percentage": 72,
+    "network_status": true,
     "is_headless_active": true,
-    "recorded_at": "2025-01-01T10:00:00Z"
+    "last_updated": "2025-01-01T10:00:00Z"
   }
 }
 ```

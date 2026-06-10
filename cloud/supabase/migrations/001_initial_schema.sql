@@ -6,30 +6,26 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   role TEXT NOT NULL CHECK (role IN ('t_mod', 'relap')),
-  display_name TEXT,
+  full_name TEXT,
   fcm_token TEXT,
-  paired_device_id UUID REFERENCES profiles(id),
+  linked_id UUID REFERENCES profiles(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS device_telemetry (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  device_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  battery_pct INT CHECK (battery_pct >= 0 AND battery_pct <= 100),
-  network_status TEXT DEFAULT 'unknown',
+  device_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+  battery_percentage INT CHECK (battery_percentage >= 0 AND battery_percentage <= 100),
+  network_status BOOLEAN DEFAULT FALSE,
   is_headless_active BOOLEAN DEFAULT FALSE,
-  recorded_at TIMESTAMPTZ DEFAULT NOW()
+  last_updated TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_telemetry_device_id
-  ON device_telemetry(device_id);
-
-CREATE INDEX IF NOT EXISTS idx_telemetry_recorded_at
-  ON device_telemetry(recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_telemetry_last_updated
+  ON device_telemetry(last_updated DESC);
 
 CREATE TABLE IF NOT EXISTS location_macros (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   keyword TEXT NOT NULL,
   lat DOUBLE PRECISION NOT NULL,
   lng DOUBLE PRECISION NOT NULL,
@@ -37,8 +33,8 @@ CREATE TABLE IF NOT EXISTS location_macros (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_macros_owner_id
-  ON location_macros(owner_id);
+CREATE INDEX IF NOT EXISTS idx_macros_user_id
+  ON location_macros(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_macros_is_synced
   ON location_macros(is_synced);

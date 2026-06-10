@@ -12,7 +12,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed profiles (2 users: 1 T-Mod + 1 Relap)
-INSERT INTO profiles (id, role, display_name, fcm_token, paired_device_id)
+INSERT INTO profiles (id, role, full_name, fcm_token, linked_id)
 VALUES
   ('00000000-0000-0000-0000-000000000001',
    't_mod',
@@ -26,11 +26,13 @@ VALUES
    '00000000-0000-0000-0000-000000000001');
 
 -- Seed device_telemetry (1 row — Relap Telemetry screen dùng row này)
-INSERT INTO device_telemetry (device_id, battery_pct, network_status, is_headless_active)
+INSERT INTO device_telemetry (device_id, battery_percentage, network_status, is_headless_active)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 78, '4G', false);
+  ('00000000-0000-0000-0000-000000000001', 78, true, false);
 
 -- Seed sos_events (2 rows — Relap SOS screen test)
+ALTER TABLE sos_events DISABLE TRIGGER on_sos_event_insert;
+
 INSERT INTO sos_events (device_id, trigger_method, lat, lng, status)
 VALUES
   ('00000000-0000-0000-0000-000000000001',
@@ -44,8 +46,10 @@ VALUES
    108.2100,
    'resolved');
 
+ALTER TABLE sos_events ENABLE TRIGGER on_sos_event_insert;
+
 -- Seed location_macros (2 rows — NLP navigation test)
-INSERT INTO location_macros (owner_id, keyword, lat, lng, is_synced)
+INSERT INTO location_macros (user_id, keyword, lat, lng, is_synced)
 VALUES
   ('00000000-0000-0000-0000-000000000001', 'nhà', 16.0544, 108.2022, true),
   ('00000000-0000-0000-0000-000000000001', 'trường', 16.0720, 108.1520, true);

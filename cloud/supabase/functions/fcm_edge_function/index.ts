@@ -87,7 +87,7 @@ serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 
     const profilesRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?paired_device_id=eq.${deviceId}&role=eq.relap&select=fcm_token`,
+      `${supabaseUrl}/rest/v1/profiles?linked_id=eq.${deviceId}&role=eq.relap&select=fcm_token`,
       {
         headers: {
           "apikey": supabaseKey,

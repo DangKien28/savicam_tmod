@@ -47,10 +47,10 @@ BEGIN
         auth.uid() = device_id OR
         auth.uid() IN (
           SELECT id FROM profiles
-          WHERE paired_device_id = device_telemetry.device_id
+          WHERE linked_id = device_telemetry.device_id
         ) OR
         auth.uid() IN (
-          SELECT paired_device_id FROM profiles
+          SELECT linked_id FROM profiles
           WHERE id = device_telemetry.device_id
         )
       );
@@ -68,8 +68,8 @@ BEGIN
   ) THEN
     CREATE POLICY "macros_owner_all" ON location_macros
       FOR ALL
-      USING (auth.uid() = owner_id)
-      WITH CHECK (auth.uid() = owner_id);
+      USING (auth.uid() = user_id)
+      WITH CHECK (auth.uid() = user_id);
   END IF;
 
   IF NOT EXISTS (
@@ -83,11 +83,11 @@ BEGIN
       USING (
         auth.uid() IN (
           SELECT id FROM profiles
-          WHERE paired_device_id = location_macros.owner_id
+          WHERE linked_id = location_macros.user_id
         ) OR
         auth.uid() IN (
-          SELECT paired_device_id FROM profiles
-          WHERE id = location_macros.owner_id
+          SELECT linked_id FROM profiles
+          WHERE id = location_macros.user_id
         )
       );
   END IF;
@@ -119,10 +119,10 @@ BEGIN
         auth.uid() = device_id OR
         auth.uid() IN (
           SELECT id FROM profiles
-          WHERE paired_device_id = sos_events.device_id
+          WHERE linked_id = sos_events.device_id
         ) OR
         auth.uid() IN (
-          SELECT paired_device_id FROM profiles
+          SELECT linked_id FROM profiles
           WHERE id = sos_events.device_id
         )
       );
@@ -139,20 +139,20 @@ BEGIN
       USING (
         auth.uid() IN (
           SELECT id FROM profiles
-          WHERE paired_device_id = sos_events.device_id
+          WHERE linked_id = sos_events.device_id
         ) OR
         auth.uid() IN (
-          SELECT paired_device_id FROM profiles
+          SELECT linked_id FROM profiles
           WHERE id = sos_events.device_id
         )
       )
       WITH CHECK (
         auth.uid() IN (
           SELECT id FROM profiles
-          WHERE paired_device_id = sos_events.device_id
+          WHERE linked_id = sos_events.device_id
         ) OR
         auth.uid() IN (
-          SELECT paired_device_id FROM profiles
+          SELECT linked_id FROM profiles
           WHERE id = sos_events.device_id
         )
       );

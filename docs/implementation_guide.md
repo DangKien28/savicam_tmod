@@ -166,12 +166,12 @@ FORMAT — exact tables:
 
 | Table | Key columns |
 |---|---|
-| `profiles` | `id uuid PK`, `display_name text`, `fcm_token text`, `paired_device_id uuid` |
-| `device_telemetry` | `id uuid PK`, `device_id uuid FK`, `battery_pct int`, `network_status text`, `is_headless_active bool`, `recorded_at timestamptz` |
-| `location_macros` | `id uuid PK`, `owner_id uuid FK`, `keyword text`, `lat double`, `lng double`, `is_synced bool` |
-| `sos_events` | `id uuid PK`, `device_id uuid FK`, `lat double`, `lng double`, `triggered_at timestamptz`, `resolved bool` |
+| `profiles` | `id uuid PK`, `full_name text`, `fcm_token text`, `linked_id uuid` |
+| `device_telemetry` | `device_id uuid PK`, `battery_percentage int`, `network_status bool`, `is_headless_active bool`, `last_updated timestamptz` |
+| `location_macros` | `id uuid PK`, `user_id uuid FK`, `keyword text`, `lat double`, `lng double`, `is_synced bool` |
+| `sos_events` | `id uuid PK`, `device_id uuid FK`, `lat double`, `lng double`, `created_at timestamptz`, `status text` |
 
-RLS rules: each table has `ENABLE ROW LEVEL SECURITY`; users may only read/write rows where `device_id = auth.uid()` or `owner_id = auth.uid()`.
+RLS rules: each table has `ENABLE ROW LEVEL SECURITY`; users may only read/write rows where `device_id = auth.uid()` or `user_id = auth.uid()`.
 STUB AVAILABLE: YES — SQLite mirror tables in `apps/tmod/lib/shared/database/` allow offline development without a live Supabase connection.
 REAL VERSION DUE: End of Week 1 (already deployed by Day 3)
 ACCEPTANCE TEST: Flutter `supabase.from('sos_events').insert({...})` succeeds and the row appears in the Supabase dashboard within 2 seconds.
@@ -191,10 +191,10 @@ FORMAT — WebSocket event payloads:
   "table": "device_telemetry",
   "record": {
     "device_id": "uuid",
-    "battery_pct": 72,
-    "network_status": "4G",
+    "battery_percentage": 72,
+    "network_status": true,
     "is_headless_active": true,
-    "recorded_at": "2025-01-01T10:00:00Z"
+    "last_updated": "2025-01-01T10:00:00Z"
   }
 }
 
@@ -207,8 +207,8 @@ FORMAT — WebSocket event payloads:
     "device_id": "uuid",
     "lat": 16.0544,
     "lng": 108.2022,
-    "triggered_at": "2025-01-01T10:05:00Z",
-    "resolved": false
+    "created_at": "2025-01-01T10:05:00Z",
+    "status": "active"
   }
 }
 ```
