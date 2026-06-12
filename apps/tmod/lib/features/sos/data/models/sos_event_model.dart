@@ -41,8 +41,8 @@ class SosEventModel extends SosEvent {
   ///   "device_id": "uuid",
   ///   "lat": 16.0544,
   ///   "lng": 108.2022,
-  ///   "triggered_at": "2025-01-01T10:05:00Z",
-  ///   "resolved": false
+  ///   "created_at": "2025-01-01T10:05:00Z",
+  ///   "status": "active"
   /// }
   /// ```
   factory SosEventModel.fromJson(Map<String, dynamic> json) {
@@ -50,8 +50,8 @@ class SosEventModel extends SosEvent {
       id: json['id'] as String,
       latitude: (json['lat'] as num).toDouble(),
       longitude: (json['lng'] as num).toDouble(),
-      triggeredAt: DateTime.parse(json['triggered_at'] as String),
-      resolved: json['resolved'] as bool? ?? false,
+      triggeredAt: DateTime.parse(json['created_at'] as String),
+      resolved: json['status'] == 'resolved',
       deviceId: json['device_id'] as String?,
     );
   }
@@ -62,8 +62,8 @@ class SosEventModel extends SosEvent {
       'id': id,
       'lat': latitude,
       'lng': longitude,
-      'triggered_at': triggeredAt.toIso8601String(),
-      'resolved': resolved,
+      'created_at': triggeredAt.toIso8601String(),
+      'status': resolved ? 'resolved' : 'active',
       if (deviceId != null) 'device_id': deviceId,
     };
   }
@@ -74,10 +74,10 @@ class SosEventModel extends SosEvent {
       id: map['id'] as String? ?? '',
       latitude: (map['lat'] as num?)?.toDouble() ?? 0.0,
       longitude: (map['lng'] as num?)?.toDouble() ?? 0.0,
-      triggeredAt: map['triggered_at'] != null
-          ? DateTime.parse(map['triggered_at'] as String)
+      triggeredAt: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String)
           : DateTime.now(),
-      resolved: (map['resolved'] as int?) == 1,
+      resolved: map['status'] == 'resolved',
       deviceId: map['device_id'] as String?,
     );
   }
@@ -88,8 +88,8 @@ class SosEventModel extends SosEvent {
       'id': id,
       'lat': latitude,
       'lng': longitude,
-      'triggered_at': triggeredAt.toIso8601String(),
-      'resolved': resolved ? 1 : 0,
+      'created_at': triggeredAt.toIso8601String(),
+      'status': resolved ? 'resolved' : 'active',
       'device_id': deviceId,
     };
   }
