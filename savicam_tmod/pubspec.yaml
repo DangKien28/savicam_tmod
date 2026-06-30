@@ -1,0 +1,48 @@
+name: savicam_tmod
+description: "SaViCam T-Mod - Trợ lý ảo Headless hỗ trợ người khiếm thị"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # FFI - Giao tiếp trực tiếp C++ (KHÔNG dùng MethodChannel/JNI)
+  ffi: ^2.1.3
+
+  # DI Container
+  get_it: ^8.0.3
+
+  # Local Database
+  sqflite: ^2.4.0
+  path: ^1.9.0
+
+  # TTS & Haptic
+  flutter_tts: ^4.2.0
+  vibration: ^3.1.8
+
+  # Network
+  http: ^1.3.0
+  web_socket_channel: ^3.0.3
+
+  # Location
+  geolocator: ^13.0.2
+
+  # Path Provider (cho file_storage_service)
+  path_provider: ^2.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/models/yolov8n_qat.tflite
+    - assets/models/minilm_l6_v2_int8.tflite
+    - assets/dict/fasttext_vi_core.json

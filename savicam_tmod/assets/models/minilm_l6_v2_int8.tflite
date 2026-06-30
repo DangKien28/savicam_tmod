@@ -1,0 +1,2 @@
+PLACEHOLDER: MiniLM-L6-v2 Int8 quantized TFLite model
+Thay thế bằng file .tflite thực tế khi build production.
