@@ -10,6 +10,9 @@ class SqliteHelper {
 
   SqliteHelper._();
 
+  /// @visibleForTesting — cho phép subclass trong test (FakeSqliteHelper).
+  SqliteHelper.internal();
+
   Future<Database> get database async {
     _db ??= await _initDB();
     return _db!;
@@ -17,7 +20,12 @@ class SqliteHelper {
 
   Future<Database> _initDB() async {
     final path = join(await getDatabasesPath(), 'savicam_tmod.db');
-    return openDatabase(path, version: 1, onCreate: _onCreate);
+    return openDatabase(
+      path,
+      version: 2,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -32,12 +40,14 @@ class SqliteHelper {
     ''');
     await db.insert('app_settings', const AppSettings().toMap());
 
+    // v2: lat/lng là float riêng biệt, không phải payload string
     await db.execute('''
       CREATE TABLE local_macros (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         keyword TEXT NOT NULL UNIQUE,
-        actionType TEXT NOT NULL,
-        payload TEXT NOT NULL
+        actionType TEXT NOT NULL DEFAULT 'navigate',
+        lat REAL NOT NULL DEFAULT 0.0,
+        lng REAL NOT NULL DEFAULT 0.0
       )
     ''');
 
@@ -50,6 +60,22 @@ class SqliteHelper {
         retryCount INTEGER NOT NULL DEFAULT 0
       )
     ''');
+  }
+
+  /// Migration v1 → v2: tái tạo local_macros với schema lat/lng float.
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('DROP TABLE IF EXISTS local_macros');
+      await db.execute('''
+        CREATE TABLE local_macros (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          keyword TEXT NOT NULL UNIQUE,
+          actionType TEXT NOT NULL DEFAULT 'navigate',
+          lat REAL NOT NULL DEFAULT 0.0,
+          lng REAL NOT NULL DEFAULT 0.0
+        )
+      ''');
+    }
   }
 
   // --- Settings ---
@@ -73,6 +99,40 @@ class SqliteHelper {
   Future<List<LocalMacro>> getMacros() async {
     final db = await database;
     return (await db.query('local_macros')).map(LocalMacro.fromMap).toList();
+  }
+
+  /// Tìm macro theo keyword (case-insensitive exact match).
+  /// Hiệu quả hơn getMacros() khi chỉ cần 1 kết quả.
+  Future<LocalMacro?> getMacroByKeyword(String keyword) async {
+    final db = await database;
+    final rows = await db.query(
+      'local_macros',
+      where: 'keyword = ? COLLATE NOCASE',
+      whereArgs: [keyword.trim()],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return LocalMacro.fromMap(rows.first);
+  }
+
+  Future<void> deleteMacro(int id) async {
+    final db = await database;
+    await db.delete('local_macros', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Chèn dữ liệu mẫu cho development/testing.
+  /// Tọa độ thực tế khu vực Đà Nẵng (khuôn viên ĐH Bách Khoa).
+  Future<void> seedSampleMacros() async {
+    const samples = [
+      LocalMacro(keyword: 'nhà', actionType: 'navigate', lat: 16.0544, lng: 108.2022),
+      LocalMacro(keyword: 'trường', actionType: 'navigate', lat: 16.0740, lng: 108.1499),
+      LocalMacro(keyword: 'bệnh viện', actionType: 'navigate', lat: 16.0678, lng: 108.2120),
+      LocalMacro(keyword: 'chợ', actionType: 'navigate', lat: 16.0680, lng: 108.2240),
+      LocalMacro(keyword: 'công viên', actionType: 'navigate', lat: 16.0616, lng: 108.2280),
+    ];
+    for (final m in samples) {
+      await upsertMacro(m);
+    }
   }
 
   // --- Offline Queue ---

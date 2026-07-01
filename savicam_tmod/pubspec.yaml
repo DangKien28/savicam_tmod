@@ -34,6 +34,12 @@ dependencies:
   # Path Provider (cho file_storage_service)
   path_provider: ^2.1.2
 
+  # Offline Map — giải nén ZIP thuần Dart (không native dep)
+  archive: ^3.6.1
+
+  # Integrity check SHA-256 cho file ZIP tải từ R2
+  crypto: ^3.0.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

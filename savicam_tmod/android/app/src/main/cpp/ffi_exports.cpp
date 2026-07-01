@@ -17,7 +17,7 @@
 
 /// Kết quả phát hiện đối tượng từ YOLOv8n
 struct DetectionResult {
-    int32_t class_id;
+    int32_t class_id;    // 0 = unknown sentinel, 1–300 (khớp dataset)
     float   confidence;
     float   x_min;
     float   y_min;
@@ -26,15 +26,18 @@ struct DetectionResult {
     int32_t track_id;       // ID tracking từ ByteTrack
     float   distance_m;     // Khoảng cách ước lượng (mét)
 };
+// static_assert(sizeof(DetectionResult) == 32, "ABI mismatch");
 
 /// Kết quả xử lý toàn khung hình
+/// Risk scale: 0=An toàn, 1=Chú ý, 2=Cảnh báo, 3=Nguy hiểm, 4=Sinh tử
 struct FrameResult {
-    int32_t risk_level;         // 0-4 (0 = an toàn, 4 = sinh tử)
-    float   ttc_seconds;        // Time-to-Collision (giây)
-    float   nearest_distance_m; // Khoảng cách vật cản gần nhất
+    int32_t risk_level;         // 0–4
+    float   ttc_seconds;        // Time-to-Collision (giây); 999.0f nếu N/A
+    float   nearest_distance_m; // Khoảng cách vật cản gần nhất;  99.0f nếu N/A
     int32_t num_detections;     // Số đối tượng phát hiện
-    int32_t nearest_class_id;   // Class ID của vật cản gần nhất
+    int32_t nearest_class_id;   // 0 (unknown) – 300 (khớp dataset)
 };
+// static_assert(sizeof(FrameResult) == 20, "ABI mismatch");
 
 // ============================================================================
 // Biến nội bộ module
@@ -124,6 +127,22 @@ void tmod_release_core() {
 __attribute__((visibility("default")))
 int32_t tmod_is_initialized() {
     return g_core_initialized ? 1 : 0;
+}
+
+/// Trả về risk_level của frame cuối cùng đã xử lý.
+/// Hữu ích cho Kotlin polling thay vì EventChannel khi tích hợp thực tế.
+///
+/// TODO(Tiến): Điền g_last_risk_level từ kết quả tính TTC gần nhất.
+/// Hiện tại luôn trả về 0 (SAFE) vì pipeline chưa hoàn thiện.
+///
+/// Khi pipeline hoàn thiện, Kotlin có thể dùng cơ chế này:
+///   Timer(33ms) → JNI.nativeGetLastRiskLevel() → fireRiskEvent()
+/// Thay vì phức tạp hơn với AttachCurrentThread callback.
+__attribute__((visibility("default")))
+int32_t tmod_get_last_risk_level() {
+    if (!g_core_initialized) return 0;
+    // TODO(Tiến — ttc_calculator.cpp): return g_last_frame_result.risk_level;
+    return 0; // stub — luôn SAFE cho đến khi pipeline hoàn thiện
 }
 
 } // extern "C"

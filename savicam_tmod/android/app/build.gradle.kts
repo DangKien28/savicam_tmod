@@ -24,7 +24,7 @@ android {
         applicationId = "com.savicam.tmod.savicam_tmod"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -47,4 +47,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // WorkManager — HeadlessRestartWorker fallback (TASK-W8-NGKIEN-01)
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 }

@@ -1,105 +1,133 @@
 import 'dart:async';
-import 'dart:ffi';
-import 'package:ffi/ffi.dart';
+
 import 'package:flutter/foundation.dart';
 
-import '../../core/ffi_bindings/c_structs.dart';
-import '../../core/ffi_bindings/native_library.dart';
+import '../../core/ffi_bridge/risk_source.dart';
 import '../../core/services/audio_haptic_manager.dart';
+import '../../core/ffi_bindings/class_taxonomy.dart';
 
-/// Lắng nghe kết quả FFI từ C++ pipeline và kích hoạt cảnh báo Mức 1-4.
-/// Chạy trong Isolate/Timer loop khi ở Headless Mode.
+/// Lắng nghe [IRiskSource] và kích hoạt cảnh báo Mức 0–4.
+///
+/// Controller KHÔNG biết nguồn dữ liệu là FFI polling hay EventChannel —
+/// chỉ subscribe [IRiskSource.riskStream]. Swap source bằng DI config.
+///
+/// Lifecycle (gọi từ EssentialScreen hoặc HeadlessService):
+///   startProcessing() → subscribe stream → nhận RiskEvent → TTS + rung + UI
+///   stopProcessing()  → cancel subscription → dừng source nếu cần
+///
+/// Risk scale (khớp ffi_data_contract_v1.md §4):
+///   0 = SAFE      (An Toàn)       — im lặng
+///   1 = ATTENTION (Chú Ý)         — đọc tên vật thể + khoảng cách
+///   2 = WARNING   (Cảnh Báo)      — beep ngắn + rung nhịp đều
+///   3 = HIGH      (Nguy Hiểm Cao) — lệnh điều hướng dứt khoát + rung mạnh
+///   4 = CRITICAL  (Sinh Tử)       — ghi đè tối cao, ngắt TTS, lệnh gắt
 class VisionAlertController {
-  final NativeLibrary _native;
+  final IRiskSource _source;
   final AudioHapticManager _audioHaptic;
-  Timer? _frameLoop;
 
-  // Trạng thái được bóc tách ra để UI lắng nghe trực tiếp
-  final ValueNotifier<String> currentStatus = ValueNotifier<String>('Đang quét...');
-  final ValueNotifier<double> lastDistance = ValueNotifier<double>(0.0);
-  final ValueNotifier<int> currentRiskLevel = ValueNotifier<int>(0);
+  StreamSubscription<RiskEvent>? _subscription;
 
-  VisionAlertController(this._native, this._audioHaptic);
+  // ── State — UI lắng nghe trực tiếp qua ValueListenableBuilder ─────────────
 
-  /// Bắt đầu vòng lặp xử lý frame (gọi từ Headless Mode)
+  final ValueNotifier<String> currentStatus   = ValueNotifier<String>('Đang quét...');
+  final ValueNotifier<double> lastDistance     = ValueNotifier<double>(0.0);
+  final ValueNotifier<int>    currentRiskLevel = ValueNotifier<int>(0);
+
+  VisionAlertController(this._source, this._audioHaptic);
+
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
+
+  /// Bắt đầu xử lý — source được kích hoạt, stream được subscribe.
+  ///
+  /// Idempotent: gọi nhiều lần không tạo duplicate subscription.
   void startProcessing() {
-    _frameLoop = Timer.periodic(const Duration(milliseconds: 33), (_) {
-      _processOneFrame();
-    });
+    if (_subscription != null) return;
+
+    // Delegate start() cho source:
+    //   FfiPollingRiskSource → khởi Timer.periodic(33ms)
+    //   EventChannelRiskSource → no-op
+    _source.start();
+
+    _subscription = _source.riskStream.listen(
+      _onRiskEvent,
+      onError: (Object e, StackTrace st) {
+        debugPrint('[VisionAlertController] stream error: $e\n$st');
+        // Không rethrow — tiếp tục nhận event nếu stream chưa đóng
+      },
+      onDone: () {
+        debugPrint('[VisionAlertController] stream closed — source dead. '
+            'Kiểm tra native side (C++ crash, hot reload?).');
+        // Reset UI về trạng thái "không xác định" khi source chết
+        currentStatus.value = 'Mất kết nối nguồn';
+      },
+    );
   }
 
+  /// Dừng xử lý — cancel subscription, dừng source.
   void stopProcessing() {
-    _frameLoop?.cancel();
-    _frameLoop = null;
+    _subscription?.cancel();
+    _subscription = null;
+    _source.stop(); // FfiPollingRiskSource: cancel Timer; EventChannelRiskSource: no-op
   }
 
-  void _processOneFrame() {
-    final resultPtr = calloc<FrameResult>();
+  // ── Event handler ──────────────────────────────────────────────────────────
 
-    try {
-      // Gọi C++ pipeline qua FFI
-      // TODO: Thay dummyFrame bằng camera frame thực tế
-      final status = _native.processFrame(nullptr, 0, 0, resultPtr);
-      if (status != 1) return;
+  void _onRiskEvent(RiskEvent event) {
+    _updateUiState(event.riskLevel, event.distanceM);
 
-      final result = resultPtr.ref;
-      
-      // Cập nhật trạng thái cho UI thông báo
-      _updateStatus(result.riskLevel, result.nearestDistanceM);
-
-      if (result.riskLevel > 0) {
-        _handleRisk(result.riskLevel, result.nearestDistanceM, result.ttcSeconds);
-      }
-    } finally {
-      calloc.free(resultPtr);
+    if (event.riskLevel > 0) {
+      _handleRisk(
+        riskLevel: event.riskLevel,
+        distance: event.distanceM,
+        ttc: event.ttcSeconds,
+        classId: event.classId,
+      );
     }
   }
 
-  void _updateStatus(int level, double distance) {
+  // ── UI state ───────────────────────────────────────────────────────────────
+
+  void _updateUiState(int level, double distance) {
     currentRiskLevel.value = level;
     lastDistance.value = distance;
-    switch (level) {
-      case 0:
-        currentStatus.value = 'An toàn';
-        break;
-      case 1:
-        currentStatus.value = 'Chú ý';
-        break;
-      case 2:
-        currentStatus.value = 'Cảnh báo';
-        break;
-      case 3:
-        currentStatus.value = 'Nguy hiểm';
-        break;
-      case 4:
-        currentStatus.value = 'Sinh tử';
-        break;
-      default:
-        currentStatus.value = 'Chưa xác định';
-    }
+    currentStatus.value = _riskLabel(level);
   }
 
-  /// Xử lý cảnh báo theo mức rủi ro - Preemptive
-  Future<void> _handleRisk(int level, double distance, double ttc) async {
-    String msg;
-    switch (level) {
-      case 1:
-        msg = 'Có vật cản cách ${distance.toStringAsFixed(1)} mét.';
-        break;
-      case 2:
-        msg = 'Cảnh báo. Vật cản ở gần, khoảng cách ${distance.toStringAsFixed(1)} mét.';
-        break;
-      case 3:
-        msg = 'Nguy hiểm! Vật cản rất gần, ${distance.toStringAsFixed(1)} mét!';
-        break;
-      case 4:
-        msg = 'Nguy hiểm cực độ! Dừng lại ngay!';
-        break;
-      default:
-        return;
-    }
+  static String _riskLabel(int level) => switch (level) {
+    0 => 'An toàn',
+    1 => 'Chú ý',
+    2 => 'Cảnh báo',
+    3 => 'Nguy hiểm',
+    4 => 'Sinh tử',
+    _ => 'Không xác định',
+  };
 
-    // fireAlert tự xử lý preemptive (mức cao hơn ngắt mức thấp hơn)
-    await _audioHaptic.fireAlert(msg, level);
+  // ── Alert generation ───────────────────────────────────────────────────────
+
+  /// Tạo thông báo TTS có tên vật thể từ [ClassTaxonomy].
+  /// Preemptive: mức cao hơn tự động ngắt mức thấp hơn qua [AudioHapticManager].
+  Future<void> _handleRisk({
+    required int riskLevel,
+    required double distance,
+    required double ttc,
+    required int classId,
+  }) async {
+    final label   = ClassTaxonomy.of(classId);
+    final objName = label.ttsName;
+    final distStr = distance >= 0 && distance < 90
+        ? 'cách ${distance.toStringAsFixed(1)} mét'
+        : '';
+
+    final String msg = switch (riskLevel) {
+      1 => '$objName phía trước${distStr.isNotEmpty ? ', $distStr' : ''}.',
+      2 => 'Cảnh báo. $objName gần $distStr.',
+      3 => 'Nguy hiểm! $objName rất gần${distStr.isNotEmpty ? ", $distStr" : ""}!',
+      4 => 'Nguy hiểm cực độ! $objName! Dừng lại ngay!',
+      _ => '',
+    };
+
+    if (msg.isEmpty) return;
+
+    await _audioHaptic.fireAlert(msg, riskLevel);
   }
 }
