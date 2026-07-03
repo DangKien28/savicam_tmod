@@ -40,6 +40,10 @@ dependencies:
   # Integrity check SHA-256 cho file ZIP tải từ R2
   crypto: ^3.0.3
 
+  # THÊM MỚI: Supabase và Quản lý biến môi trường
+  supabase_flutter: ^2.0.0
+  flutter_dotenv: ^5.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -52,3 +56,4 @@ flutter:
     - assets/models/yolov8n_qat.tflite
     - assets/models/minilm_l6_v2_int8.tflite
     - assets/dict/fasttext_vi_core.json
+    - .env # THÊM MỚI: Khai báo file môi trường

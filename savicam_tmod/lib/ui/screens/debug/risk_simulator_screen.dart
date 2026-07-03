@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
-import '../../core/ffi_bridge/event_channel_risk_source.dart';
-import '../../core/ffi_bridge/method_channel_bridge.dart';
-import '../../core/ffi_bridge/risk_source.dart';
-import '../../core/services/audio_haptic_manager.dart';
-import '../../../features/vision_alerts/vision_alert_controller.dart';
+// Thay thế toàn bộ relative imports thành absolute imports
+import 'package:savicam_tmod/core/ffi_bridge/event_channel_risk_source.dart';
+import 'package:savicam_tmod/core/ffi_bridge/method_channel_bridge.dart';
+import 'package:savicam_tmod/core/ffi_bridge/risk_source.dart';
+import 'package:savicam_tmod/core/services/audio_haptic_manager.dart';
+import 'package:savicam_tmod/features/vision_alerts/vision_alert_controller.dart';
 
 /// RiskSimulatorScreen — DoD Test Screen cho TASK-W6-NGKIEN-01
 ///
@@ -30,7 +31,7 @@ class RiskSimulatorScreen extends StatefulWidget {
 }
 
 class _RiskSimulatorScreenState extends State<RiskSimulatorScreen> {
-  final _bridge = MethodChannelBridge();
+  final _bridge = GetIt.instance<MethodChannelBridge>();
 
   // Controller riêng với EventChannelRiskSource — không ảnh hưởng production
   late final EventChannelRiskSource _eventSource;

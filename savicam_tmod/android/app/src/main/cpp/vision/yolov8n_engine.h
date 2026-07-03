@@ -17,7 +17,7 @@ class YoloV8nEngine {
 public:
     YoloV8nEngine();
     bool Init(const char* model_path);
-    std::vector<BBox> Detect(const uint8_t* rgba, int32_t w, int32_t h);
+    std::vector<BBox> Detect(const uint8_t* frame_data, int32_t w, int32_t h);
 };
 
 } // namespace vision

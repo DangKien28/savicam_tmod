@@ -19,17 +19,18 @@ import 'features/telemetry/watch_live_location_usecase.dart';
 import 'features/sos_module/sos_controller.dart';
 
 import 'features/navigation/navigation_controller.dart';
-import 'features/navigation/navigation_repository.dart';
 import 'features/navigation/map_download_service.dart';
 import 'features/navigation/graph_extractor.dart';
 import 'features/navigation/offline_graph_engine.dart';
 import 'features/cloud_recognition/cloud_recognition_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final sl = GetIt.instance;
 
 /// Đăng ký tất cả dependency. Gọi 1 lần duy nhất trong main().
 Future<void> initDependencies() async {
   // ─── Core Services (Singleton) ───
+  sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
   sl.registerLazySingleton<MethodChannelBridge>(() => MethodChannelBridge());
   sl.registerLazySingleton<NativeLibrary>(() => NativeLibrary());
   sl.registerLazySingleton<AudioHapticManager>(() => AudioHapticManager());
