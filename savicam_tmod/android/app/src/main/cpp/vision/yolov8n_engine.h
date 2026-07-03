@@ -1,8 +1,10 @@
+// android/app/src/main/cpp/vision/yolov8n_engine.h
 #ifndef TMOD_YOLOV8N_ENGINE_H
 #define TMOD_YOLOV8N_ENGINE_H
 
 #include <vector>
 #include <cstdint>
+#include <stdint.h>
 
 namespace tmod {
 namespace vision {

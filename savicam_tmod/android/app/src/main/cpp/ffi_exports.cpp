@@ -1,10 +1,8 @@
-/// ffi_exports.cpp
-/// Cánh cửa DUY NHẤT mở ra cho Dart FFI gọi vào.
-/// Tất cả các hàm export đều là extern "C" để Dart dart:ffi có thể lookup.
-/// KHÔNG sử dụng JNI, KHÔNG sử dụng Java_com_* naming convention.
-
+// android/app/src/main/cpp/ffi_exports.cpp
 #include <cstdint>
+#include <stdint.h>
 #include <cstring>
+#include <vector>
 #include <android/log.h>
 #include "vision/yolov8n_engine.h"
 
@@ -12,49 +10,30 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-// ============================================================================
-// Structs chia sẻ với Dart (phải khớp 1:1 với c_structs.dart)
-// ============================================================================
-
-/// Kết quả phát hiện đối tượng từ YOLOv8n
 struct DetectionResult {
-    int32_t class_id;    // 0 = unknown sentinel, 1–300 (khớp dataset)
+    int32_t class_id;    
     float   confidence;
     float   x_min;
     float   y_min;
     float   x_max;
     float   y_max;
-    int32_t track_id;       // ID tracking từ ByteTrack
-    float   distance_m;     // Khoảng cách ước lượng (mét)
+    int32_t track_id;       
+    float   distance_m;     
 };
-// static_assert(sizeof(DetectionResult) == 32, "ABI mismatch");
 
-/// Kết quả xử lý toàn khung hình
-/// Risk scale: 0=An toàn, 1=Chú ý, 2=Cảnh báo, 3=Nguy hiểm, 4=Sinh tử
 struct FrameResult {
-    int32_t risk_level;         // 0–4
-    float   ttc_seconds;        // Time-to-Collision (giây); 999.0f nếu N/A
-    float   nearest_distance_m; // Khoảng cách vật cản gần nhất;  99.0f nếu N/A
-    int32_t num_detections;     // Số đối tượng phát hiện
-    int32_t nearest_class_id;   // 0 (unknown) – 300 (khớp dataset)
+    int32_t risk_level;         
+    float   ttc_seconds;        
+    float   nearest_distance_m; 
+    int32_t num_detections;     
+    int32_t nearest_class_id;   
 };
-// static_assert(sizeof(FrameResult) == 20, "ABI mismatch");
 
-// ============================================================================
-// Biến nội bộ module
-// ============================================================================
 static bool g_core_initialized = false;
 static tmod::vision::YoloV8nEngine* g_yolo_engine = nullptr;
 
-// ============================================================================
-// EXPORTED FUNCTIONS - Dart FFI gọi trực tiếp qua đây
-// ============================================================================
-
 extern "C" {
 
-/// Khởi tạo toàn bộ pipeline: TFLite + NNAPI + YOLOv8n + ByteTrack
-/// @param model_path: Đường dẫn tuyệt đối tới file yolov8n_qat.tflite trên thiết bị
-/// @return 1 nếu thành công, 0 nếu thất bại
 __attribute__((visibility("default")))
 int32_t tmod_init_core(const char* model_path) {
     LOGI("tmod_init_core: Khởi tạo pipeline CV với model: %s", model_path);
@@ -69,24 +48,11 @@ int32_t tmod_init_core(const char* model_path) {
         return 0;
     }
 
-    // TODO: Nạp TFLite model, tạo NNAPI delegate, khởi tạo ByteTrack
-    // g_tflite_runner = new TFLiteRunner(model_path, true);
-    // g_byte_tracker = new ByteTrack();
-    // g_depth_estimator = new DepthEstimator();
-    // g_ttc_calculator = new TtcCalculator();
-
     g_core_initialized = true;
     LOGI("tmod_init_core: Pipeline CV khởi tạo hoàn tất.");
     return 1;
 }
 
-/// Xử lý 1 khung hình camera.
-/// Dart gửi pointer tới buffer ảnh xám và kích thước, nhận lại FrameResult.
-/// @param frame_data: Con trỏ tới dữ liệu pixel Grayscale (Y plane)
-/// @param width: Chiều rộng ảnh
-/// @param height: Chiều cao ảnh
-/// @param result: Con trỏ output FrameResult (Dart cấp phát bộ nhớ)
-/// @return 1 nếu xử lý thành công, 0 nếu thất bại
 __attribute__((visibility("default")))
 int32_t tmod_process_frame(const uint8_t* frame_data, int32_t width, int32_t height, FrameResult* result) {
     if (!g_core_initialized || !frame_data || !result) {
@@ -94,10 +60,8 @@ int32_t tmod_process_frame(const uint8_t* frame_data, int32_t width, int32_t hei
         return 0;
     }
 
-    // 1. Chạy YOLO engine trên mảng byte thô (Grayscale)
     std::vector<tmod::vision::BBox> bboxes = g_yolo_engine->Detect(frame_data, width, height);
 
-    // 2. Chuyển thông tin bbox vào FrameResult để truyền lên Dart
     result->num_detections = bboxes.size();
     
     if (bboxes.empty()) {
@@ -106,62 +70,42 @@ int32_t tmod_process_frame(const uint8_t* frame_data, int32_t width, int32_t hei
         result->nearest_distance_m = 99.0f;
         result->nearest_class_id = -1;
     } else {
-        // Tạm thời lấy đối tượng đầu tiên làm đối tượng gần nhất để kích hoạt Alert Controller
-        result->risk_level = 2; // Gắn cứng mức 2 (Cảnh báo) để test luồng
+        result->risk_level = 2; 
         result->ttc_seconds = 2.5f;
         result->nearest_distance_m = 2.0f;
         result->nearest_class_id = bboxes[0].class_id;
     }
 
-    // TODO: Pipeline thực tế:
-    // 3. ByteTrack cập nhật tracking
-    // 4. DepthEstimator tính khoảng cách
-    // 5. TtcCalculator tính TTC & mức rủi ro
-
     return 1;
 }
 
-/// Lấy danh sách detection chi tiết của frame cuối cùng.
-/// @param out_buffer: Dart cấp phát mảng DetectionResult[max_count]
-/// @param max_count: Kích thước mảng tối đa
-/// @return Số lượng detection thực tế ghi vào buffer
 __attribute__((visibility("default")))
 int32_t tmod_get_detections(DetectionResult* out_buffer, int32_t max_count) {
     if (!g_core_initialized || !out_buffer || max_count <= 0) {
         return 0;
     }
-
-    // TODO: Copy danh sách detection từ frame cuối cùng vào out_buffer
-    return 0; // Hiện chưa có detection nào
+    return 0; 
 }
 
-/// Giải phóng toàn bộ tài nguyên C++
 __attribute__((visibility("default")))
 void tmod_release_core() {
     LOGI("tmod_release_core: Giải phóng tài nguyên pipeline CV.");
-
     if (g_yolo_engine != nullptr) {
         delete g_yolo_engine;
         g_yolo_engine = nullptr;
     }
-
-    // TODO: delete g_tflite_runner, g_byte_tracker, ...
     g_core_initialized = false;
 }
 
-/// Kiểm tra trạng thái khởi tạo
 __attribute__((visibility("default")))
 int32_t tmod_is_initialized() {
     return g_core_initialized ? 1 : 0;
 }
 
-/// Trả về risk_level của frame cuối cùng đã xử lý.
-/// Hữu ích cho Kotlin polling thay vì EventChannel khi tích hợp thực tế.
 __attribute__((visibility("default")))
 int32_t tmod_get_last_risk_level() {
     if (!g_core_initialized) return 0;
-    // TODO(Tiến — ttc_calculator.cpp): return g_last_frame_result.risk_level;
-    return 0; // stub — luôn SAFE cho đến khi pipeline hoàn thiện
+    return 0; 
 }
 
 } // extern "C"
